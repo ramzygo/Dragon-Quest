@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dragon Spirit: Refined</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #222;
+            overflow: hidden;
+            touch-action: none;
+            font-family: 'Noto Serif JP', 'Georgia', serif; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* HUD */
+        .hud-text {
+            position: absolute;
+            z-index: 10;
+            font-weight: bold;
+            font-family: 'Noto Serif JP', serif;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        /* Adjusted positions to avoid overlap */
+        #highScoreBoard { top: 10px; left: 15px; font-size: 16px; color: #8b2e2e; letter-spacing: 1px; text-transform: uppercase; }
+        #coinBoard { top: 10px; right: 15px; font-size: 16px; color: #d4af37; text-shadow: 1px 1px 0 #000; letter-spacing: 1px; }
+        
+        #levelIndicator { 
+            position: absolute; 
+            width: 100%; 
+            top: 40px; /* Moved down */
+            text-align: center; 
+            font-size: 14px; 
+            color: #2f5d87; 
+            font-style: italic; 
+            pointer-events: none; 
+            z-index: 10; 
+        }
+
+        #scoreBoard { 
+            position: absolute; 
+            width: 100%; 
+            top: 15%; 
+            text-align: center; 
+            font-size: 60px; 
+            font-weight: bold; 
+            color: #2c2c2c; 
+            text-shadow: 0px 0px 5px #f0e6d2; 
+            pointer-events: none; 
+            z-index: 5; /* Lower z-index so it doesn't block other UI */
+        }
+
+        /* Instruction Box */
+        #instruction {
+            position: absolute;
+            top: 70%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: #f0e6d2;
+            background-color: #b83b3b;
+            padding: 15px 30px;
+            border: 2px solid #2c2c2c;
+            border-radius: 4px;
+            box-shadow: 4px 4px 0px #2c2c2c;
+            pointer-events: none;
+            text-align: center;
+            z-index: 30;
+            width: 80%;
+        }
+
+        /* --- SHOP UI --- */
+        #shopOverlay {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 450px;
+            height: 85%; 
+            background-color: #f0e6d2;
+            border: 4px solid #2c2c2c;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.5);
+            z-index: 50;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+        .shop-header {
+            flex: 0 0 auto;
+        }
+        .shop-title { font-size: 28px; color: #8b2e2e; margin-bottom: 5px; border-bottom: 2px solid #2c2c2c; padding-bottom: 5px; }
+        .shop-wallet { font-size: 20px; color: #d4af37; text-shadow: 1px 1px 0 #000; margin-bottom: 10px; font-weight: bold; }
+        
+        /* Cheat Toggle */
+        #cheatBtn {
+            background-color: #555;
+            color: #fff;
+            border: 1px solid #000;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Noto Serif JP', serif;
+            width: 100%;
+        }
+        #cheatBtn.active {
+            background-color: #2ecc71; /* Green for ON */
+            font-weight: bold;
+        }
+
+        /* Tabs */
+        .shop-tabs { display: flex; justify-content: space-around; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .tab-btn { background: none; border: none; font-size: 16px; font-family: 'Noto Serif JP', serif; cursor: pointer; color: #555; font-weight: bold; }
+        .tab-btn.active { color: #b83b3b; text-decoration: underline; }
+
+        .shop-content {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding-right: 5px; 
+        }
+        
+        /* Items */
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .item-info { text-align: left; }
+        .item-name { font-size: 16px; font-weight: bold; color: #2c2c2c; }
+        .item-desc { font-size: 12px; color: #555; }
+        .buy-btn {
+            background-color: #2f5d87;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            font-family: 'Noto Serif JP', serif;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            min-width: 80px;
+        }
+        .buy-btn:disabled { background-color: #ccc; color: #666; cursor: not-allowed; }
+        .equip-btn { background-color: #2c2c2c; color: #fff; }
+        .maxed-btn { background-color: #8b2e2e; color: white; cursor: default; }
+
+        #restartBtn {
+            flex: 0 0 auto;
+            background-color: #b83b3b;
+            color: #f0e6d2;
+            font-size: 20px;
+            padding: 15px 30px;
+            border: 2px solid #2c2c2c;
+            box-shadow: 4px 4px 0 #2c2c2c;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Flash effects */
+        .flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 0.1s; z-index: 25; }
+        #damageFlash { background-color: rgba(184, 59, 59, 0.4); }
+        #healFlash { background-color: rgba(212, 175, 55, 0.3); }
+        #shieldFlash { background-color: rgba(47, 93, 135, 0.5); }
+        
+        /* Control Hints */
+        .control-hint {
+            position: absolute;
+            bottom: 20px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 20;
+        }
+        #leftHint { left: 20px; text-align: left; display: none; }
+        #rightHint { right: 20px; text-align: right; }
+
+        .texture-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            opacity: 0.15;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="texture-overlay"></div>
+    <div id="damageFlash" class="flash-overlay"></div>
+    <div id="healFlash" class="flash-overlay"></div>
+    <div id="shieldFlash" class="flash-overlay"></div>
+    
+    <div id="highScoreBoard" class="hud-text">Best: <span id="hsValue">0</span></div>
+    <div id="coinBoard" class="hud-text">Coins: <span id="coinValue">0</span></div>
+    
+    <div id="levelIndicator">Peaceful Era</div>
+    <div id="scoreBoard"><span id="scoreValue">0</span></div>
+    
+    <div id="instruction">
+        TAP RIGHT to Fly<br>
+        <span id="fireInstruct" style="font-size: 16px; opacity: 0.8; display:none;">TAP LEFT to Shoot</span>
+    </div>
+
+    <div id="leftHint" class="control-hint">Tap Area: FIRE</div>
+    <div id="rightHint" class="control-hint">Tap Area: FLY</div>
+
+    <!-- SHOP MENU -->
+    <div id="shopOverlay" style="display:none;">
+        <div class="shop-header">
+            <div class="shop-title">Spirit Merchant</div>
+            <button id="cheatBtn" onclick="toggleCheat()">Cheat Mode: OFF</button>
+            <div class="shop-wallet">Wallet: <span id="shopWalletVal">0</span> Koban</div>
+            <div class="shop-tabs">
+                <button class="tab-btn active" onclick="switchTab('items')">Items</button>
+                <button class="tab-btn" onclick="switchTab('skills')">Skills</button>
+                <button class="tab-btn" onclick="switchTab('style')">Style</button>
+            </div>
+        </div>
+        
+        <div class="shop-content" id="shopItems">
+            <!-- Consumables -->
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Omamori Charm</div><div class="item-desc">Shields 1 hit (Next Run)</div></div>
+                <button id="btnBuyShield" class="buy-btn" onclick="buyItem('shield', 25)">25</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Magnet Spirit</div><div class="item-desc">Attracts coins (Next Run)</div></div>
+                <button id="btnBuyMagnet" class="buy-btn" onclick="buyItem('magnet', 15)">15</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Iron Scales</div><div class="item-desc">+20 Max Health (Perm)</div></div>
+                <button id="btnBuyHealth" class="buy-btn" onclick="buyItem('health', 100)">100</button>
+            </div>
+        </div>
+
+        <div class="shop-content" id="shopSkills" style="display:none;">
+            <!-- Abilities -->
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Scroll of Fire</div><div class="item-desc">Unlock Fire Breath Attack</div></div>
+                <button id="btnBuyFire" class="buy-btn" onclick="buyItem('fire', 250)">250</button>
+            </div>
+        </div>
+
+        <div class="shop-content" id="shopStyle" style="display:none;">
+            <!-- Skins -->
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Vermilion Dragon</div><div class="item-desc">Classic Red</div></div>
+                <button id="btnSkinDefault" class="buy-btn equip-btn" onclick="equipItem('skin', 'default')">Equipped</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Azure Dragon</div><div class="item-desc">Spirit Blue</div></div>
+                <button id="btnSkinAzure" class="buy-btn" onclick="buyOrEquip('skin', 'azure', 200)">200</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Golden Dragon</div><div class="item-desc">Emperor's Gold</div></div>
+                <button id="btnSkinGold" class="buy-btn" onclick="buyOrEquip('skin', 'gold', 500)">500</button>
+            </div>
+            <!-- Themes -->
+             <div class="shop-item" style="border-top: 2px solid #2c2c2c; margin-top: 15px;">
+                <div class="item-info"><div class="item-name">Paper Theme</div><div class="item-desc">Classic</div></div>
+                <button id="btnThemeDefault" class="buy-btn equip-btn" onclick="equipItem('theme', 'default')">Equipped</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Midnight Theme</div><div class="item-desc">Dark Night Mode</div></div>
+                <button id="btnThemeNight" class="buy-btn" onclick="buyOrEquip('theme', 'night', 300)">300</button>
+            </div>
+        </div>
+
+        <button id="restartBtn" onclick="resetGame()">Reincarnate</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('scoreValue');
+        const highScoreEl = document.getElementById('hsValue');
+        const coinEl = document.getElementById('coinValue');
+        const instructionEl = document.getElementById('instruction');
+        const levelEl = document.getElementById('levelIndicator');
+        const fireInstructEl = document.getElementById('fireInstruct');
+        
+        // Shop UI
+        const shopOverlay = document.getElementById('shopOverlay');
+        const shopWalletVal = document.getElementById('shopWalletVal');
+        const cheatBtn = document.getElementById('cheatBtn');
+        
+        // Colors
+        let themeColors = {
+            bg: '#f0e6d2',
+            text: '#2c2c2c',
+            sun: '#b83b3b',
+            water: '#2f5d87',
+            bambooLight: '#8FA875',
+            bambooDark: '#5E7048',
+            bambooShadow: '#3e4a2e',
+            gold: '#d4af37'
+        };
+
+        const dragonColors = {
+            default: { body: '#c44e43', trim: '#d4af37' },
+            azure: { body: '#2f5d87', trim: '#a8d8e6' },
+            gold: { body: '#d4af37', trim: '#fff' }
+        };
+
+        // --- Persistent Data ---
+        let playerData = {
+            totalCoins: 0,
+            highScore: 0,
+            maxHealthLevel: 0, 
+            hasShield: false,
+            hasMagnet: false,
+            hasFireBreath: false,
+            unlockedSkins: ['default'],
+            unlockedThemes: ['default'],
+            currentSkin: 'default',
+            currentTheme: 'default'
+        };
+
+        let cheatMode = false;
+
+        function loadData() {
+            const saved = localStorage.getItem('dragonSpiritSaveLegendsV1');
+            if (saved) {
+                const loaded = JSON.parse(saved);
+                playerData = { ...playerData, ...loaded };
+            }
+        }
+        function saveData() {
+            localStorage.setItem('dragonSpiritSaveLegendsV1', JSON.stringify(playerData));
+        }
+        loadData();
+
+        // --- Game Variables ---
+        let frames = 0;
+        let score = 0;
+        let runCoins = 0;
+        let gameState = 'start'; 
+        const gravity = 0.25;
+        let gameSpeed = 2.5; 
+        
+        let baseMaxHealth = 100;
+        let maxHealth = 100;
+        let currentHealth = 100;
+        
+        let enemySpawnRate = 0; 
+        let coinSpawnRate = 0.005;
+
+        let animationId;
+        let clouds = [];
+        highScoreEl.innerText = playerData.highScore;
+
+        // --- Helper Drawing Functions ---
+        function drawBambooSegment(x, y, w, h) {
+            ctx.fillStyle = themeColors.bambooLight;
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = themeColors.bambooDark;
+            ctx.fillRect(x + w - 10, y, 10, h);
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, w, h);
+            ctx.strokeStyle = themeColors.bambooShadow;
+            ctx.lineWidth = 2;
+            const nodeSpacing = 60;
+            let startY = y;
+            while(startY < y + h) {
+                ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x + w, startY); ctx.stroke();
+                startY += nodeSpacing;
+            }
+        }
+
+        function drawCoin(c) {
+            if(c.collected) return;
+            ctx.save();
+            ctx.translate(c.x, c.y);
+            ctx.fillStyle = themeColors.gold;
+            ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(0, 0, c.w/2, c.h/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#b8860b';
+            ctx.fillRect(-5, -8, 10, 4); ctx.fillRect(-5, -2, 10, 4); ctx.fillRect(-5, 4, 10, 4);
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath(); ctx.ellipse(-4, -6, 4, 6, -0.5, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Shop Logic ---
+        function toggleCheat() {
+            cheatMode = !cheatMode;
+            cheatBtn.innerText = cheatMode ? "Cheat Mode: ON" : "Cheat Mode: OFF";
+            cheatBtn.className = cheatMode ? "active" : "";
+            updateShopUI();
+        }
+
+        function switchTab(tabName) {
+            document.getElementById('shopItems').style.display = 'none';
+            document.getElementById('shopSkills').style.display = 'none';
+            document.getElementById('shopStyle').style.display = 'none';
+            
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('shop'+ tabName.charAt(0).toUpperCase() + tabName.slice(1)).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        function updateShopUI() {
+            shopWalletVal.innerText = playerData.totalCoins;
+            const btnShield = document.getElementById('btnBuyShield');
+            const btnMagnet = document.getElementById('btnBuyMagnet');
+            const btnHealth = document.getElementById('btnBuyHealth');
+            updateBtnState(btnShield, playerData.hasShield, 25, "OWNED");
+            updateBtnState(btnMagnet, playerData.hasMagnet, 15, "OWNED");
+            if (playerData.maxHealthLevel >= 5) {
+                btnHealth.innerText = "MAX"; btnHealth.disabled = true; btnHealth.classList.add('maxed-btn');
+            } else {
+                btnHealth.innerText = "100"; 
+                btnHealth.disabled = !(cheatMode || playerData.totalCoins >= 100); 
+                btnHealth.classList.remove('maxed-btn');
+            }
+            const btnFire = document.getElementById('btnBuyFire');
+            updateBtnState(btnFire, playerData.hasFireBreath, 250, "UNLOCKED");
+            updateStyleBtn('btnSkinAzure', 'skin', 'azure', 200);
+            updateStyleBtn('btnSkinGold', 'skin', 'gold', 500);
+            updateStyleBtn('btnThemeNight', 'theme', 'night', 300);
+            updateEquipLabel('btnSkinDefault', 'skin', 'default');
+            updateEquipLabel('btnThemeDefault', 'theme', 'default');
+        }
+
+        function updateBtnState(btn, condition, cost, ownedText) {
+            if (condition) {
+                btn.innerText = ownedText;
+                btn.disabled = true;
+                btn.classList.add('maxed-btn');
+            } else {
+                btn.innerText = cost;
+                btn.disabled = !(cheatMode || playerData.totalCoins >= cost);
+                btn.classList.remove('maxed-btn');
+            }
+        }
+
+        function updateStyleBtn(btnId, type, name, cost) {
+            const btn = document.getElementById(btnId);
+            const list = type === 'skin' ? playerData.unlockedSkins : playerData.unlockedThemes;
+            const current = type === 'skin' ? playerData.currentSkin : playerData.currentTheme;
+
+            if (list.includes(name)) {
+                if (current === name) {
+                    btn.innerText = "Equipped"; btn.className = "buy-btn maxed-btn"; btn.onclick = null;
+                } else {
+                    btn.innerText = "Equip"; btn.className = "buy-btn equip-btn"; btn.onclick = () => equipItem(type, name);
+                }
+            } else {
+                btn.innerText = cost; btn.className = "buy-btn";
+                btn.disabled = !(cheatMode || playerData.totalCoins >= cost);
+                btn.onclick = () => buyOrEquip(type, name, cost);
+            }
+        }
+
+        function updateEquipLabel(btnId, type, name) {
+            const btn = document.getElementById(btnId);
+            const current = type === 'skin' ? playerData.currentSkin : playerData.currentTheme;
+             if (current === name) { btn.innerText = "Equipped"; btn.className = "buy-btn maxed-btn"; } 
+             else { btn.innerText = "Equip"; btn.className = "buy-btn equip-btn"; }
+        }
+
+        function buyItem(item, cost) {
+            if (cheatMode || playerData.totalCoins >= cost) {
+                if (!cheatMode) playerData.totalCoins -= cost; 
+                if (item === 'shield') playerData.hasShield = true;
+                if (item === 'magnet') playerData.hasMagnet = true;
+                if (item === 'health') playerData.maxHealthLevel++;
+                if (item === 'fire') {
+                    playerData.hasFireBreath = true;
+                    document.getElementById('leftHint').style.display = 'block';
+                    fireInstructEl.style.display = 'block';
+                }
+                saveData();
+                updateShopUI();
+            }
+        }
+
+        function buyOrEquip(type, name, cost) {
+            if (cheatMode || playerData.totalCoins >= cost) {
+                if (!cheatMode) playerData.totalCoins -= cost;
+                if (type === 'skin') playerData.unlockedSkins.push(name);
+                if (type === 'theme') playerData.unlockedThemes.push(name);
+                equipItem(type, name);
+                saveData();
+                updateShopUI();
+            }
+        }
+
+        function equipItem(type, name) {
+            if (type === 'skin') playerData.currentSkin = name;
+            if (type === 'theme') playerData.currentTheme = name;
+            applyTheme();
+            saveData();
+            updateShopUI();
+        }
+
+        function applyTheme() {
+            if (playerData.currentTheme === 'night') {
+                themeColors = { 
+                    bg: '#1a1a2e', text: '#e0e0e0', sun: '#8b0000', water: '#0f3460',
+                    bambooLight: '#556b2f', bambooDark: '#2f4f4f', bambooShadow: '#000', gold: '#d4af37'
+                };
+                document.body.style.backgroundColor = '#1a1a2e';
+                levelEl.style.color = '#a8d8e6';
+                scoreEl.style.color = '#fff';
+            } else {
+                themeColors = { 
+                    bg: '#f0e6d2', text: '#2c2c2c', sun: '#b83b3b', water: '#2f5d87',
+                    bambooLight: '#8FA875', bambooDark: '#5E7048', bambooShadow: '#3e4a2e', gold: '#d4af37'
+                };
+                document.body.style.backgroundColor = '#f0e6d2';
+                levelEl.style.color = '#2f5d87';
+                scoreEl.style.color = '#2c2c2c';
+            }
+        }
+
+        // --- Game Logic ---
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initClouds(); }
+        window.addEventListener('resize', resize);
+        function initClouds() {
+            clouds = [];
+            for(let i=0; i<5; i++) clouds.push({x: Math.random()*canvas.width, y: Math.random()*(canvas.height/2), w: 60+Math.random()*100, speed: 0.2+Math.random()*0.3});
+        }
+        resize();
+        applyTheme();
+
+        // --- Dragon ---
+        const dragon = {
+            x: 80,
+            y: canvas.height / 2,
+            radius: 18,
+            velocity: 0,
+            jump: -6,
+            tailHistory: [],
+            draw: function() {
+                const style = dragonColors[playerData.currentSkin] || dragonColors.default;
+                if (playerData.hasMagnet) {
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 15, 0, Math.PI*2);
+                    ctx.strokeStyle = `rgba(212, 175, 55, ${0.3 + Math.sin(frames/10)*0.2})`; ctx.lineWidth = 2; ctx.stroke();
+                }
+                if (playerData.hasShield) {
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 8, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(47, 93, 135, 0.3)'; ctx.fill(); ctx.strokeStyle = '#2f5d87'; ctx.stroke();
+                }
+                if (frames % 2 === 0) {
+                    this.tailHistory.unshift({x: this.x, y: this.y});
+                    if (this.tailHistory.length > 10) this.tailHistory.pop();
+                }
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                for (let i = 0; i < this.tailHistory.length; i++) {
+                    ctx.lineTo(this.tailHistory[i].x - (i*2), this.tailHistory[i].y);
+                }
+                ctx.lineCap = 'round'; ctx.lineWidth = 12; ctx.strokeStyle = style.body; ctx.stroke();
+                ctx.lineWidth = 4; ctx.strokeStyle = style.trim; ctx.stroke();
+                ctx.fillStyle = style.body; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(this.x + 10, this.y + 5, 12, 8, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(this.x - 5, this.y - 10); ctx.lineTo(this.x - 10, this.y - 25); ctx.lineTo(this.x + 5, this.y - 10);
+                ctx.fillStyle = '#1a1a1a'; ctx.fill();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.x + 5, this.y - 5, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(this.x + 7, this.y - 5, 2, 0, Math.PI * 2); ctx.fill();
+            },
+            update: function() {
+                this.velocity += gravity;
+                this.y += this.velocity;
+                if (this.y + this.radius >= canvas.height - 40) {
+                    this.y = canvas.height - 40 - this.radius;
+                    takeDamage(1000); 
+                }
+                if (this.y - this.radius <= 0) {
+                    this.y = this.radius;
+                    this.velocity = 0;
+                }
+            },
+            flap: function() { this.velocity = this.jump; },
+            shoot: function() {
+                if (playerData.hasFireBreath) {
+                    fireballs.push({ x: this.x + 20, y: this.y + 5, r: 8, vx: 8 });
+                }
+            }
+        };
+
+        const pipes = [];
+        const pipeWidth = 50; const pipeGap = 190; 
+        const enemies = [];
+        const coins = []; 
+        const fireballs = [];
+
+        function spawnEnemy() {
+            const type = Math.random() > 0.5 ? 1 : 0;
+            enemies.push({ x: canvas.width + 50, y: Math.random()*(canvas.height-100)+50, r: 15, type: type, angle: 0 });
+        }
+
+        function spawnCoin() {
+            coins.push({ x: canvas.width + 50, y: Math.random()*(canvas.height-200)+100, w: 25, h: 35, collected: false });
+        }
+
+        function takeDamage(amount) {
+            if (playerData.hasShield) {
+                playerData.hasShield = false; saveData();
+                document.getElementById('shieldFlash').style.opacity = 0.6;
+                setTimeout(() => document.getElementById('shieldFlash').style.opacity = 0, 150);
+                dragon.velocity = -4; return; 
+            }
+            currentHealth -= amount;
+            document.getElementById('damageFlash').style.opacity = 0.6;
+            setTimeout(() => document.getElementById('damageFlash').style.opacity = 0, 150);
+            if (currentHealth <= 0) { currentHealth = 0; gameOver(); }
+        }
+
+        function handleGameLogic() {
+            if (score < 5) { gameSpeed = 2.5; enemySpawnRate = 0; levelEl.innerText = "Peaceful Era"; } 
+            else if (score >= 5 && score < 15) { gameSpeed = 3.0; enemySpawnRate = 0.005; levelEl.innerText = "Spirits Awaken"; } 
+            else if (score >= 15 && score < 30) { gameSpeed = 3.5; enemySpawnRate = 0.01; levelEl.innerText = "Night of Demons"; } 
+            else { gameSpeed = 4.0; enemySpawnRate = 0.02; levelEl.innerText = "Dragon's Fury"; }
+
+            if (frames % Math.floor(120 * (2.5/gameSpeed)) === 0) {
+                const topHeight = Math.floor(Math.random() * (Math.max(canvas.height - pipeGap - 140, 50) - 50 + 1) + 50);
+                pipes.push({ x: canvas.width, top: topHeight, bottom: canvas.height - topHeight - pipeGap - 40, scored: false });
+            }
+            if (Math.random() < enemySpawnRate) spawnEnemy();
+            if (Math.random() < coinSpawnRate) spawnCoin();
+
+            for (let i = 0; i < fireballs.length; i++) {
+                let f = fireballs[i]; f.x += f.vx;
+                ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fillStyle = '#ff4500'; ctx.fill();
+                ctx.beginPath(); ctx.arc(f.x - 5, f.y, f.r-2, 0, Math.PI*2); ctx.fillStyle = '#ffcc00'; ctx.fill();
+                if (f.x > canvas.width) { fireballs.splice(i, 1); i--; continue; }
+                for (let j = 0; j < enemies.length; j++) {
+                    let e = enemies[j];
+                    if (Math.hypot(f.x - e.x, f.y - e.y) < f.r + e.r) {
+                        enemies.splice(j, 1); fireballs.splice(i, 1); i--; score += 1; scoreEl.innerText = score; break;
+                    }
+                }
+            }
+
+            for (let i = 0; i < pipes.length; i++) {
+                let p = pipes[i]; p.x -= gameSpeed;
+                drawBambooSegment(p.x, 0, pipeWidth, p.top);
+                drawBambooSegment(p.x, canvas.height - 40 - p.bottom, pipeWidth, p.bottom);
+                if (dragon.x + dragon.radius > p.x && dragon.x - dragon.radius < p.x + pipeWidth) {
+                    if (dragon.y - dragon.radius < p.top || dragon.y + dragon.radius > canvas.height - 40 - p.bottom) {
+                        takeDamage(1000); 
+                    }
+                }
+                if (p.x + pipeWidth < dragon.x && !p.scored) { score++; scoreEl.innerText = score; p.scored = true; }
+                if (p.x + pipeWidth < 0) { pipes.shift(); i--; }
+            }
+
+            for (let i = 0; i < enemies.length; i++) {
+                let e = enemies[i]; e.x -= (gameSpeed * 1.2); 
+                const color = e.type === 0 ? '#b83b3b' : '#3b4bb8';
+                if (e.type === 1) { e.angle += 0.1; e.y += Math.sin(e.angle) * 1.5; }
+                ctx.save(); ctx.translate(e.x, e.y);
+                ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, e.r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-5,-10); ctx.lineTo(-8,-22); ctx.lineTo(0,-12); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(5,-10); ctx.lineTo(8,-22); ctx.lineTo(0,-12); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-8,-2); ctx.lineTo(-2,2); ctx.moveTo(8,-2); ctx.lineTo(2,2); ctx.stroke();
+                ctx.restore();
+                if (Math.hypot(dragon.x - e.x, dragon.y - e.y) < dragon.radius + e.r) { takeDamage(35); enemies.splice(i, 1); i--; }
+                else if (e.x + e.r < 0) { enemies.shift(); i--; }
+            }
+
+            for (let i = 0; i < coins.length; i++) {
+                let c = coins[i];
+                // MAGNET LOGIC UPDATED
+                if (playerData.hasMagnet && !c.collected) {
+                     const dx = dragon.x - c.x;
+                     const dy = dragon.y - c.y;
+                     const dist = Math.hypot(dx, dy);
+                     if (dist < 300) {
+                         // Increased speed and force
+                         c.x += (dx / dist) * 12; 
+                         c.y += (dy / dist) * 12;
+                     } else {
+                         c.x -= gameSpeed; // Normal movement
+                     }
+                } else {
+                    c.x -= gameSpeed; // Normal movement
+                }
+
+                drawCoin(c);
+
+                // COLLISION CHECK
+                // slightly increased range
+                if (Math.hypot(dragon.x - c.x, dragon.y - c.y) < dragon.radius + c.w + 10 && !c.collected) {
+                    currentHealth = Math.min(maxHealth, currentHealth + 15);
+                    runCoins++; coinEl.innerText = runCoins;
+                    document.getElementById('healFlash').style.opacity = 0.3;
+                    setTimeout(() => document.getElementById('healFlash').style.opacity = 0, 150);
+                    c.collected = true; coins.splice(i, 1); i--;
+                } else if (c.x + c.w < 0) { coins.shift(); i--; }
+            }
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = themeColors.sun; ctx.beginPath(); ctx.arc(canvas.width * 0.7, canvas.height * 0.2, 40, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = playerData.currentTheme === 'night' ? '#ccc' : '#fff'; 
+            ctx.beginPath(); ctx.moveTo(0, canvas.height - 40); ctx.lineTo(canvas.width * 0.3, canvas.height * 0.4); ctx.lineTo(canvas.width * 0.6, canvas.height - 40); ctx.fill();
+            ctx.fillStyle = themeColors.water; 
+            ctx.beginPath(); ctx.moveTo(0, canvas.height - 40); ctx.lineTo(canvas.width * 0.3, canvas.height * 0.45); ctx.lineTo(canvas.width * 0.6, canvas.height - 40); ctx.fill();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            for(let c of clouds) {
+                c.x -= c.speed; if(c.x + c.w < 0) c.x = canvas.width;
+                ctx.beginPath(); ctx.fillRect(c.x, c.y, c.w, 20); ctx.arc(c.x, c.y + 10, 15, 0, Math.PI*2); ctx.arc(c.x + c.w, c.y + 10, 15, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.fillStyle = themeColors.water; ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+            ctx.fillStyle = playerData.currentTheme === 'night' ? '#aaa' : '#fff'; 
+            let waveX = (frames * 2) % 40;
+            for(let i = -40; i < canvas.width; i+=40) {
+                ctx.beginPath(); ctx.arc(i - waveX, canvas.height - 35, 15, 0, Math.PI, false); ctx.fill();
+            }
+        }
+
+        function drawHealthBar() {
+            // Moved down to Y=60 to avoid UI overlap
+            const w = 200; const h = 20; const x = canvas.width/2 - w/2; const y = 60;
+            ctx.lineWidth = 3; ctx.strokeStyle = themeColors.text; ctx.strokeRect(x, y, w, h);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; ctx.fillRect(x, y, w, h);
+            if (currentHealth > 0) {
+                ctx.fillStyle = currentHealth > 30 ? '#c44e43' : '#8b0000';
+                ctx.fillRect(x, y, (currentHealth/maxHealth)*w, h);
+            }
+        }
+
+        function gameOver() {
+            gameState = 'over';
+            playerData.totalCoins += runCoins;
+            if (score > playerData.highScore) { playerData.highScore = score; highScoreEl.innerText = score; }
+            saveData();
+            shopOverlay.style.display = 'flex';
+            instructionEl.style.display = 'none';
+            document.getElementById('leftHint').style.display = 'none';
+            document.getElementById('rightHint').style.display = 'none';
+            updateShopUI();
+        }
+
+        function resetGame() {
+            dragon.y = canvas.height / 2; dragon.velocity = 0; dragon.tailHistory = [];
+            pipes.length = 0; enemies.length = 0; coins.length = 0; fireballs.length = 0;
+            score = 0; runCoins = 0; coinEl.innerText = 0; scoreEl.innerText = 0;
+            maxHealth = baseMaxHealth + (playerData.maxHealthLevel * 20); currentHealth = maxHealth;
+            frames = 0; gameSpeed = 2.5; gameState = 'play';
+            shopOverlay.style.display = 'none';
+            instructionEl.style.display = 'none';
+            document.getElementById('rightHint').style.display = 'block';
+            if (playerData.hasFireBreath) {
+                document.getElementById('leftHint').style.display = 'block';
+            }
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            if (gameState === 'play') {
+                dragon.update(); dragon.draw(); handleGameLogic(); drawHealthBar(); frames++;
+            } else if (gameState === 'start') {
+                dragon.draw(); dragon.y = canvas.height/2 + Math.sin(Date.now()/300)*15;
+                if(playerData.hasFireBreath) fireInstructEl.style.display = 'inline';
+            } else if (gameState === 'over') {
+                dragon.draw();
+                for(let p of pipes) { 
+                    drawBambooSegment(p.x, 0, pipeWidth, p.top);
+                    drawBambooSegment(p.x, canvas.height - 40 - p.bottom, pipeWidth, p.bottom);
+                }
+            }
+            animationId = requestAnimationFrame(loop);
+        }
+
+        function handleInput(e) {
+            if (shopOverlay.style.display === 'flex') return;
+            if (e.type === 'touchstart') e.preventDefault();
+            e.stopPropagation();
+            let clientX = 0;
+            if (e.type === 'touchstart') clientX = e.changedTouches[0].clientX;
+            else if (e.type === 'mousedown') clientX = e.clientX;
+            else if (e.code === 'Space') clientX = canvas.width; 
+            else if (e.code === 'KeyF') clientX = 0; 
+            const isLeft = clientX < window.innerWidth / 2;
+            if (gameState === 'start') {
+                resetGame();
+            } else if (gameState === 'play') {
+                if (isLeft && playerData.hasFireBreath) {
+                    dragon.shoot();
+                } else {
+                    dragon.flap();
+                }
+            }
+        }
+
+        window.addEventListener('touchstart', handleInput, {passive: false});
+        window.addEventListener('mousedown', handleInput);
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'KeyF') handleInput(e);
+        });
+
+        loop();
+
+    </script>
+</body>
+</html>
