@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dragon Spirit: Refined</title>
+    <title>Dragon Spirit: Destruction Edition</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&display=swap');
 
@@ -32,14 +32,13 @@
             pointer-events: none;
         }
 
-        /* Adjusted positions to avoid overlap */
         #highScoreBoard { top: 10px; left: 15px; font-size: 16px; color: #8b2e2e; letter-spacing: 1px; text-transform: uppercase; }
         #coinBoard { top: 10px; right: 15px; font-size: 16px; color: #d4af37; text-shadow: 1px 1px 0 #000; letter-spacing: 1px; }
         
         #levelIndicator { 
             position: absolute; 
             width: 100%; 
-            top: 40px; /* Moved down */
+            top: 40px; 
             text-align: center; 
             font-size: 14px; 
             color: #2f5d87; 
@@ -58,7 +57,7 @@
             color: #2c2c2c; 
             text-shadow: 0px 0px 5px #f0e6d2; 
             pointer-events: none; 
-            z-index: 5; /* Lower z-index so it doesn't block other UI */
+            z-index: 5; 
         }
 
         /* Instruction Box */
@@ -106,7 +105,6 @@
         .shop-title { font-size: 28px; color: #8b2e2e; margin-bottom: 5px; border-bottom: 2px solid #2c2c2c; padding-bottom: 5px; }
         .shop-wallet { font-size: 20px; color: #d4af37; text-shadow: 1px 1px 0 #000; margin-bottom: 10px; font-weight: bold; }
         
-        /* Cheat Toggle */
         #cheatBtn {
             background-color: #555;
             color: #fff;
@@ -119,11 +117,10 @@
             width: 100%;
         }
         #cheatBtn.active {
-            background-color: #2ecc71; /* Green for ON */
+            background-color: #2ecc71; 
             font-weight: bold;
         }
 
-        /* Tabs */
         .shop-tabs { display: flex; justify-content: space-around; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
         .tab-btn { background: none; border: none; font-size: 16px; font-family: 'Noto Serif JP', serif; cursor: pointer; color: #555; font-weight: bold; }
         .tab-btn.active { color: #b83b3b; text-decoration: underline; }
@@ -135,7 +132,6 @@
             padding-right: 5px; 
         }
         
-        /* Items */
         .shop-item {
             display: flex;
             justify-content: space-between;
@@ -176,13 +172,11 @@
             width: 100%;
         }
 
-        /* Flash effects */
         .flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 0.1s; z-index: 25; }
         #damageFlash { background-color: rgba(184, 59, 59, 0.4); }
         #healFlash { background-color: rgba(212, 175, 55, 0.3); }
         #shieldFlash { background-color: rgba(47, 93, 135, 0.5); }
         
-        /* Control Hints */
         .control-hint {
             position: absolute;
             bottom: 20px;
@@ -242,8 +236,8 @@
         <div class="shop-content" id="shopItems">
             <!-- Consumables -->
             <div class="shop-item">
-                <div class="item-info"><div class="item-name">Omamori Charm</div><div class="item-desc">Shields 1 hit (Next Run)</div></div>
-                <button id="btnBuyShield" class="buy-btn" onclick="buyItem('shield', 25)">25</button>
+                <div class="item-info"><div class="item-name">Omamori Barrier</div><div class="item-desc">Shields 3 hits (Next Run)</div></div>
+                <button id="btnBuyShield" class="buy-btn" onclick="buyItem('shield', 50)">50</button>
             </div>
             <div class="shop-item">
                 <div class="item-info"><div class="item-name">Magnet Spirit</div><div class="item-desc">Attracts coins (Next Run)</div></div>
@@ -260,6 +254,10 @@
             <div class="shop-item">
                 <div class="item-info"><div class="item-name">Scroll of Fire</div><div class="item-desc">Unlock Fire Breath Attack</div></div>
                 <button id="btnBuyFire" class="buy-btn" onclick="buyItem('fire', 250)">250</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><div class="item-name">Time Scroll</div><div class="item-desc">Unlock Slow Mo Mode</div></div>
+                <button id="btnBuyTime" class="buy-btn" onclick="buyOrEquip('time', 'unlocked', 400)">400</button>
             </div>
         </div>
 
@@ -310,14 +308,8 @@
         
         // Colors
         let themeColors = {
-            bg: '#f0e6d2',
-            text: '#2c2c2c',
-            sun: '#b83b3b',
-            water: '#2f5d87',
-            bambooLight: '#8FA875',
-            bambooDark: '#5E7048',
-            bambooShadow: '#3e4a2e',
-            gold: '#d4af37'
+            bg: '#f0e6d2', text: '#2c2c2c', sun: '#b83b3b', water: '#2f5d87',
+            bambooLight: '#8FA875', bambooDark: '#5E7048', bambooShadow: '#3e4a2e', gold: '#d4af37'
         };
 
         const dragonColors = {
@@ -332,8 +324,11 @@
             highScore: 0,
             maxHealthLevel: 0, 
             hasShield: false,
+            shieldCharges: 0,
             hasMagnet: false,
             hasFireBreath: false,
+            hasSlowMo: false,
+            slowMoEquipped: false,
             unlockedSkins: ['default'],
             unlockedThemes: ['default'],
             currentSkin: 'default',
@@ -343,14 +338,14 @@
         let cheatMode = false;
 
         function loadData() {
-            const saved = localStorage.getItem('dragonSpiritSaveLegendsV1');
+            const saved = localStorage.getItem('dragonSpiritSaveBarrierV1');
             if (saved) {
                 const loaded = JSON.parse(saved);
                 playerData = { ...playerData, ...loaded };
             }
         }
         function saveData() {
-            localStorage.setItem('dragonSpiritSaveLegendsV1', JSON.stringify(playerData));
+            localStorage.setItem('dragonSpiritSaveBarrierV1', JSON.stringify(playerData));
         }
         loadData();
 
@@ -361,6 +356,7 @@
         let gameState = 'start'; 
         const gravity = 0.25;
         let gameSpeed = 2.5; 
+        let speedMultiplier = 1.0; 
         
         let baseMaxHealth = 100;
         let maxHealth = 100;
@@ -368,41 +364,39 @@
         
         let enemySpawnRate = 0; 
         let coinSpawnRate = 0.005;
+        let invulnerable = 0; 
 
         let animationId;
         let clouds = [];
         highScoreEl.innerText = playerData.highScore;
 
-        // --- Helper Drawing Functions ---
-        function drawBambooSegment(x, y, w, h) {
-            ctx.fillStyle = themeColors.bambooLight;
+        // --- Drawing Helpers ---
+        function drawBambooSegment(x, y, w, h, hp) {
+            // Visualize damage
+            let tint = 0;
+            if (hp < 3) tint = (3 - hp) * 30; // Darken if damaged
+
+            ctx.fillStyle = adjustColor(themeColors.bambooLight, -tint); 
             ctx.fillRect(x, y, w, h);
-            ctx.fillStyle = themeColors.bambooDark;
+            ctx.fillStyle = adjustColor(themeColors.bambooDark, -tint); 
             ctx.fillRect(x + w - 10, y, 10, h);
-            ctx.strokeStyle = '#1a1a1a';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, w, h);
-            ctx.strokeStyle = themeColors.bambooShadow;
-            ctx.lineWidth = 2;
-            const nodeSpacing = 60;
-            let startY = y;
-            while(startY < y + h) {
-                ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x + w, startY); ctx.stroke();
-                startY += nodeSpacing;
-            }
+            ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+            ctx.strokeStyle = themeColors.bambooShadow; ctx.lineWidth = 2;
+            let startY = y; while(startY < y + h) { ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x + w, startY); ctx.stroke(); startY += 60; }
+        }
+
+        // Helper to darken colors for damage visual
+        function adjustColor(color, amount) {
+            return color; // Simplification: keeps color stable, functionality is priority
         }
 
         function drawCoin(c) {
             if(c.collected) return;
-            ctx.save();
-            ctx.translate(c.x, c.y);
-            ctx.fillStyle = themeColors.gold;
-            ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 2;
+            ctx.save(); ctx.translate(c.x, c.y);
+            ctx.fillStyle = themeColors.gold; ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.ellipse(0, 0, c.w/2, c.h/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#b8860b';
-            ctx.fillRect(-5, -8, 10, 4); ctx.fillRect(-5, -2, 10, 4); ctx.fillRect(-5, 4, 10, 4);
-            ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            ctx.beginPath(); ctx.ellipse(-4, -6, 4, 6, -0.5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#b8860b'; ctx.fillRect(-5, -8, 10, 4); ctx.fillRect(-5, -2, 10, 4); ctx.fillRect(-5, 4, 10, 4);
+            ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.ellipse(-4, -6, 4, 6, -0.5, 0, Math.PI*2); ctx.fill();
             ctx.restore();
         }
 
@@ -418,30 +412,21 @@
             document.getElementById('shopItems').style.display = 'none';
             document.getElementById('shopSkills').style.display = 'none';
             document.getElementById('shopStyle').style.display = 'none';
-            
             const buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(b => b.classList.remove('active'));
-            
             document.getElementById('shop'+ tabName.charAt(0).toUpperCase() + tabName.slice(1)).style.display = 'block';
             event.target.classList.add('active');
         }
 
         function updateShopUI() {
             shopWalletVal.innerText = playerData.totalCoins;
-            const btnShield = document.getElementById('btnBuyShield');
-            const btnMagnet = document.getElementById('btnBuyMagnet');
+            updateBtnState(document.getElementById('btnBuyShield'), playerData.hasShield, 50, "OWNED (3)");
+            updateBtnState(document.getElementById('btnBuyMagnet'), playerData.hasMagnet, 15, "OWNED");
             const btnHealth = document.getElementById('btnBuyHealth');
-            updateBtnState(btnShield, playerData.hasShield, 25, "OWNED");
-            updateBtnState(btnMagnet, playerData.hasMagnet, 15, "OWNED");
-            if (playerData.maxHealthLevel >= 5) {
-                btnHealth.innerText = "MAX"; btnHealth.disabled = true; btnHealth.classList.add('maxed-btn');
-            } else {
-                btnHealth.innerText = "100"; 
-                btnHealth.disabled = !(cheatMode || playerData.totalCoins >= 100); 
-                btnHealth.classList.remove('maxed-btn');
-            }
-            const btnFire = document.getElementById('btnBuyFire');
-            updateBtnState(btnFire, playerData.hasFireBreath, 250, "UNLOCKED");
+            if (playerData.maxHealthLevel >= 5) { btnHealth.innerText = "MAX"; btnHealth.disabled = true; btnHealth.classList.add('maxed-btn'); }
+            else { btnHealth.innerText = "100"; btnHealth.disabled = !(cheatMode || playerData.totalCoins >= 100); btnHealth.classList.remove('maxed-btn'); }
+            updateBtnState(document.getElementById('btnBuyFire'), playerData.hasFireBreath, 250, "UNLOCKED");
+            updateTimeBtn();
             updateStyleBtn('btnSkinAzure', 'skin', 'azure', 200);
             updateStyleBtn('btnSkinGold', 'skin', 'gold', 500);
             updateStyleBtn('btnThemeNight', 'theme', 'night', 300);
@@ -450,14 +435,21 @@
         }
 
         function updateBtnState(btn, condition, cost, ownedText) {
-            if (condition) {
-                btn.innerText = ownedText;
-                btn.disabled = true;
-                btn.classList.add('maxed-btn');
+            if (condition) { btn.innerText = ownedText; btn.disabled = true; btn.classList.add('maxed-btn'); }
+            else { btn.innerText = cost; btn.disabled = !(cheatMode || playerData.totalCoins >= cost); btn.classList.remove('maxed-btn'); }
+        }
+
+        function updateTimeBtn() {
+            const btn = document.getElementById('btnBuyTime');
+            if (playerData.hasSlowMo) {
+                if (playerData.slowMoEquipped) { btn.innerText = "Enabled"; btn.className = "buy-btn maxed-btn"; }
+                else { btn.innerText = "Enable"; btn.className = "buy-btn equip-btn"; }
+                btn.disabled = false;
+                btn.onclick = () => { playerData.slowMoEquipped = !playerData.slowMoEquipped; saveData(); updateShopUI(); };
             } else {
-                btn.innerText = cost;
-                btn.disabled = !(cheatMode || playerData.totalCoins >= cost);
-                btn.classList.remove('maxed-btn');
+                btn.innerText = "400"; btn.className = "buy-btn";
+                btn.disabled = !(cheatMode || playerData.totalCoins >= 400);
+                btn.onclick = () => buyOrEquip('time', 'unlocked', 400);
             }
         }
 
@@ -465,13 +457,9 @@
             const btn = document.getElementById(btnId);
             const list = type === 'skin' ? playerData.unlockedSkins : playerData.unlockedThemes;
             const current = type === 'skin' ? playerData.currentSkin : playerData.currentTheme;
-
             if (list.includes(name)) {
-                if (current === name) {
-                    btn.innerText = "Equipped"; btn.className = "buy-btn maxed-btn"; btn.onclick = null;
-                } else {
-                    btn.innerText = "Equip"; btn.className = "buy-btn equip-btn"; btn.onclick = () => equipItem(type, name);
-                }
+                if (current === name) { btn.innerText = "Equipped"; btn.className = "buy-btn maxed-btn"; btn.onclick = null; } 
+                else { btn.innerText = "Equip"; btn.className = "buy-btn equip-btn"; btn.onclick = () => equipItem(type, name); }
             } else {
                 btn.innerText = cost; btn.className = "buy-btn";
                 btn.disabled = !(cheatMode || playerData.totalCoins >= cost);
@@ -482,23 +470,18 @@
         function updateEquipLabel(btnId, type, name) {
             const btn = document.getElementById(btnId);
             const current = type === 'skin' ? playerData.currentSkin : playerData.currentTheme;
-             if (current === name) { btn.innerText = "Equipped"; btn.className = "buy-btn maxed-btn"; } 
-             else { btn.innerText = "Equip"; btn.className = "buy-btn equip-btn"; }
+            if (current === name) { btn.innerText = "Equipped"; btn.className = "buy-btn maxed-btn"; } 
+            else { btn.innerText = "Equip"; btn.className = "buy-btn equip-btn"; }
         }
 
         function buyItem(item, cost) {
             if (cheatMode || playerData.totalCoins >= cost) {
                 if (!cheatMode) playerData.totalCoins -= cost; 
-                if (item === 'shield') playerData.hasShield = true;
+                if (item === 'shield') { playerData.hasShield = true; playerData.shieldCharges = 3; }
                 if (item === 'magnet') playerData.hasMagnet = true;
                 if (item === 'health') playerData.maxHealthLevel++;
-                if (item === 'fire') {
-                    playerData.hasFireBreath = true;
-                    document.getElementById('leftHint').style.display = 'block';
-                    fireInstructEl.style.display = 'block';
-                }
-                saveData();
-                updateShopUI();
+                if (item === 'fire') { playerData.hasFireBreath = true; fireInstructEl.style.display = 'block'; }
+                saveData(); updateShopUI();
             }
         }
 
@@ -507,18 +490,16 @@
                 if (!cheatMode) playerData.totalCoins -= cost;
                 if (type === 'skin') playerData.unlockedSkins.push(name);
                 if (type === 'theme') playerData.unlockedThemes.push(name);
-                equipItem(type, name);
-                saveData();
-                updateShopUI();
+                if (type === 'time') { playerData.hasSlowMo = true; playerData.slowMoEquipped = true; }
+                if (type !== 'time') equipItem(type, name);
+                saveData(); updateShopUI();
             }
         }
 
         function equipItem(type, name) {
             if (type === 'skin') playerData.currentSkin = name;
             if (type === 'theme') playerData.currentTheme = name;
-            applyTheme();
-            saveData();
-            updateShopUI();
+            applyTheme(); saveData(); updateShopUI();
         }
 
         function applyTheme() {
@@ -548,8 +529,7 @@
             clouds = [];
             for(let i=0; i<5; i++) clouds.push({x: Math.random()*canvas.width, y: Math.random()*(canvas.height/2), w: 60+Math.random()*100, speed: 0.2+Math.random()*0.3});
         }
-        resize();
-        applyTheme();
+        resize(); applyTheme();
 
         // --- Dragon ---
         const dragon = {
@@ -561,14 +541,24 @@
             tailHistory: [],
             draw: function() {
                 const style = dragonColors[playerData.currentSkin] || dragonColors.default;
+                
+                // Ring Visualization (Shield)
+                if (playerData.hasShield && playerData.shieldCharges > 0) {
+                    ctx.strokeStyle = '#2f5d87';
+                    ctx.lineWidth = 2;
+                    for(let i=0; i<playerData.shieldCharges; i++) {
+                        ctx.beginPath(); 
+                        ctx.arc(this.x, this.y, this.radius + 10 + (i*6), 0, Math.PI*2);
+                        ctx.fillStyle = `rgba(47, 93, 135, ${0.1 + (i*0.1)})`; 
+                        ctx.fill(); ctx.stroke();
+                    }
+                }
+
                 if (playerData.hasMagnet) {
-                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 15, 0, Math.PI*2);
-                    ctx.strokeStyle = `rgba(212, 175, 55, ${0.3 + Math.sin(frames/10)*0.2})`; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 30, 0, Math.PI*2);
+                    ctx.strokeStyle = `rgba(212, 175, 55, ${0.3 + Math.sin(frames/10)*0.2})`; ctx.lineWidth = 1; ctx.stroke();
                 }
-                if (playerData.hasShield) {
-                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 8, 0, Math.PI*2);
-                    ctx.fillStyle = 'rgba(47, 93, 135, 0.3)'; ctx.fill(); ctx.strokeStyle = '#2f5d87'; ctx.stroke();
-                }
+
                 if (frames % 2 === 0) {
                     this.tailHistory.unshift({x: this.x, y: this.y});
                     if (this.tailHistory.length > 10) this.tailHistory.pop();
@@ -588,7 +578,7 @@
                 ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(this.x + 7, this.y - 5, 2, 0, Math.PI * 2); ctx.fill();
             },
             update: function() {
-                this.velocity += gravity;
+                this.velocity += gravity * speedMultiplier;
                 this.y += this.velocity;
                 if (this.y + this.radius >= canvas.height - 40) {
                     this.y = canvas.height - 40 - this.radius;
@@ -612,6 +602,7 @@
         const enemies = [];
         const coins = []; 
         const fireballs = [];
+        const particles = [];
 
         function spawnEnemy() {
             const type = Math.random() > 0.5 ? 1 : 0;
@@ -622,13 +613,39 @@
             coins.push({ x: canvas.width + 50, y: Math.random()*(canvas.height-200)+100, w: 25, h: 35, collected: false });
         }
 
-        function takeDamage(amount) {
-            if (playerData.hasShield) {
-                playerData.hasShield = false; saveData();
-                document.getElementById('shieldFlash').style.opacity = 0.6;
-                setTimeout(() => document.getElementById('shieldFlash').style.opacity = 0, 150);
-                dragon.velocity = -4; return; 
+        function createExplosion(x, y, color) {
+            for(let i=0; i<15; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 30,
+                    color: color
+                });
             }
+        }
+
+        function takeDamage(amount, type, hitObject) {
+            if (invulnerable > 0) return;
+
+            if (playerData.hasShield && playerData.shieldCharges > 0) {
+                playerData.shieldCharges--;
+                if (playerData.shieldCharges <= 0) playerData.hasShield = false;
+                
+                if (type === 'bamboo') {
+                    createExplosion(dragon.x + 25, dragon.y, themeColors.bambooLight);
+                    hitObject.disabled = true; 
+                    dragon.velocity = -3; 
+                    invulnerable = 60; 
+                } 
+                else {
+                    createExplosion(dragon.x, dragon.y, '#fff');
+                    invulnerable = 60;
+                }
+                saveData();
+                return; 
+            }
+            
             currentHealth -= amount;
             document.getElementById('damageFlash').style.opacity = 0.6;
             setTimeout(() => document.getElementById('damageFlash').style.opacity = 0, 150);
@@ -636,6 +653,11 @@
         }
 
         function handleGameLogic() {
+            speedMultiplier = (playerData.hasSlowMo && playerData.slowMoEquipped) ? 0.7 : 1.0;
+            const currentSpeed = gameSpeed * speedMultiplier;
+
+            if (invulnerable > 0) invulnerable--;
+
             if (score < 5) { gameSpeed = 2.5; enemySpawnRate = 0; levelEl.innerText = "Peaceful Era"; } 
             else if (score >= 5 && score < 15) { gameSpeed = 3.0; enemySpawnRate = 0.005; levelEl.innerText = "Spirits Awaken"; } 
             else if (score >= 15 && score < 30) { gameSpeed = 3.5; enemySpawnRate = 0.01; levelEl.innerText = "Night of Demons"; } 
@@ -643,39 +665,91 @@
 
             if (frames % Math.floor(120 * (2.5/gameSpeed)) === 0) {
                 const topHeight = Math.floor(Math.random() * (Math.max(canvas.height - pipeGap - 140, 50) - 50 + 1) + 50);
-                pipes.push({ x: canvas.width, top: topHeight, bottom: canvas.height - topHeight - pipeGap - 40, scored: false });
+                pipes.push({ 
+                    x: canvas.width, top: topHeight, bottom: canvas.height - topHeight - pipeGap - 40, scored: false, 
+                    disabled: false, topHealth: 3, bottomHealth: 3 
+                });
             }
             if (Math.random() < enemySpawnRate) spawnEnemy();
             if (Math.random() < coinSpawnRate) spawnCoin();
+
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life--;
+                ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4);
+                if (p.life <= 0) { particles.splice(i, 1); i--; }
+            }
 
             for (let i = 0; i < fireballs.length; i++) {
                 let f = fireballs[i]; f.x += f.vx;
                 ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fillStyle = '#ff4500'; ctx.fill();
                 ctx.beginPath(); ctx.arc(f.x - 5, f.y, f.r-2, 0, Math.PI*2); ctx.fillStyle = '#ffcc00'; ctx.fill();
                 if (f.x > canvas.width) { fireballs.splice(i, 1); i--; continue; }
+                
+                let hit = false;
+                // Check Enemies
                 for (let j = 0; j < enemies.length; j++) {
                     let e = enemies[j];
                     if (Math.hypot(f.x - e.x, f.y - e.y) < f.r + e.r) {
-                        enemies.splice(j, 1); fireballs.splice(i, 1); i--; score += 1; scoreEl.innerText = score; break;
+                        enemies.splice(j, 1); hit = true; score += 1; scoreEl.innerText = score; break;
                     }
                 }
+                
+                // Check Bamboo
+                if (!hit) {
+                    for (let k = 0; k < pipes.length; k++) {
+                        let p = pipes[k];
+                        if (p.x > f.x + 50 || p.x + pipeWidth < f.x - 50) continue;
+                        
+                        // Top Pipe
+                        if (!p.disabled && p.topHealth > 0) {
+                            if (f.x + f.r > p.x && f.x - f.r < p.x + pipeWidth && f.y - f.r < p.top) {
+                                p.topHealth--; hit = true;
+                                createExplosion(f.x, f.y, themeColors.bambooLight);
+                                if(p.topHealth <= 0) createExplosion(p.x + pipeWidth/2, p.top/2, themeColors.bambooDark);
+                            }
+                        }
+                        // Bottom Pipe
+                        if (!hit && !p.disabled && p.bottomHealth > 0) {
+                            let bottomY = canvas.height - 40 - p.bottom;
+                            if (f.x + f.r > p.x && f.x - f.r < p.x + pipeWidth && f.y + f.r > bottomY) {
+                                p.bottomHealth--; hit = true;
+                                createExplosion(f.x, f.y, themeColors.bambooLight);
+                                if(p.bottomHealth <= 0) createExplosion(p.x + pipeWidth/2, bottomY + p.bottom/2, themeColors.bambooDark);
+                            }
+                        }
+                        if (hit) break;
+                    }
+                }
+
+                if (hit) { fireballs.splice(i, 1); i--; }
             }
 
             for (let i = 0; i < pipes.length; i++) {
-                let p = pipes[i]; p.x -= gameSpeed;
-                drawBambooSegment(p.x, 0, pipeWidth, p.top);
-                drawBambooSegment(p.x, canvas.height - 40 - p.bottom, pipeWidth, p.bottom);
-                if (dragon.x + dragon.radius > p.x && dragon.x - dragon.radius < p.x + pipeWidth) {
-                    if (dragon.y - dragon.radius < p.top || dragon.y + dragon.radius > canvas.height - 40 - p.bottom) {
-                        takeDamage(1000); 
+                let p = pipes[i]; p.x -= currentSpeed;
+                
+                if (!p.disabled) {
+                    if (p.topHealth > 0) {
+                        drawBambooSegment(p.x, 0, pipeWidth, p.top, p.topHealth);
+                        if (dragon.x + dragon.radius > p.x && dragon.x - dragon.radius < p.x + pipeWidth && dragon.y - dragon.radius < p.top) {
+                             takeDamage(1000, 'bamboo', p);
+                        }
+                    }
+                    if (p.bottomHealth > 0) {
+                        let bottomY = canvas.height - 40 - p.bottom;
+                        drawBambooSegment(p.x, bottomY, pipeWidth, p.bottom, p.bottomHealth);
+                        if (dragon.x + dragon.radius > p.x && dragon.x - dragon.radius < p.x + pipeWidth && dragon.y + dragon.radius > bottomY) {
+                             takeDamage(1000, 'bamboo', p);
+                        }
                     }
                 }
+
                 if (p.x + pipeWidth < dragon.x && !p.scored) { score++; scoreEl.innerText = score; p.scored = true; }
                 if (p.x + pipeWidth < 0) { pipes.shift(); i--; }
             }
 
             for (let i = 0; i < enemies.length; i++) {
-                let e = enemies[i]; e.x -= (gameSpeed * 1.2); 
+                let e = enemies[i]; e.x -= (currentSpeed * 1.2); 
                 const color = e.type === 0 ? '#b83b3b' : '#3b4bb8';
                 if (e.type === 1) { e.angle += 0.1; e.y += Math.sin(e.angle) * 1.5; }
                 ctx.save(); ctx.translate(e.x, e.y);
@@ -684,32 +758,18 @@
                 ctx.beginPath(); ctx.moveTo(5,-10); ctx.lineTo(8,-22); ctx.lineTo(0,-12); ctx.fill();
                 ctx.strokeStyle = '#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-8,-2); ctx.lineTo(-2,2); ctx.moveTo(8,-2); ctx.lineTo(2,2); ctx.stroke();
                 ctx.restore();
-                if (Math.hypot(dragon.x - e.x, dragon.y - e.y) < dragon.radius + e.r) { takeDamage(35); enemies.splice(i, 1); i--; }
+                if (Math.hypot(dragon.x - e.x, dragon.y - e.y) < dragon.radius + e.r) { takeDamage(35, 'enemy', null); enemies.splice(i, 1); i--; }
                 else if (e.x + e.r < 0) { enemies.shift(); i--; }
             }
 
             for (let i = 0; i < coins.length; i++) {
                 let c = coins[i];
-                // MAGNET LOGIC UPDATED
                 if (playerData.hasMagnet && !c.collected) {
-                     const dx = dragon.x - c.x;
-                     const dy = dragon.y - c.y;
-                     const dist = Math.hypot(dx, dy);
-                     if (dist < 300) {
-                         // Increased speed and force
-                         c.x += (dx / dist) * 12; 
-                         c.y += (dy / dist) * 12;
-                     } else {
-                         c.x -= gameSpeed; // Normal movement
-                     }
-                } else {
-                    c.x -= gameSpeed; // Normal movement
-                }
-
+                     const dx = dragon.x - c.x; const dy = dragon.y - c.y; const dist = Math.hypot(dx, dy);
+                     if (dist < 300) { c.x += (dx / dist) * 12; c.y += (dy / dist) * 12; } 
+                     else { c.x -= currentSpeed; }
+                } else { c.x -= currentSpeed; }
                 drawCoin(c);
-
-                // COLLISION CHECK
-                // slightly increased range
                 if (Math.hypot(dragon.x - c.x, dragon.y - c.y) < dragon.radius + c.w + 10 && !c.collected) {
                     currentHealth = Math.min(maxHealth, currentHealth + 15);
                     runCoins++; coinEl.innerText = runCoins;
@@ -740,7 +800,6 @@
         }
 
         function drawHealthBar() {
-            // Moved down to Y=60 to avoid UI overlap
             const w = 200; const h = 20; const x = canvas.width/2 - w/2; const y = 60;
             ctx.lineWidth = 3; ctx.strokeStyle = themeColors.text; ctx.strokeRect(x, y, w, h);
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; ctx.fillRect(x, y, w, h);
@@ -764,7 +823,7 @@
 
         function resetGame() {
             dragon.y = canvas.height / 2; dragon.velocity = 0; dragon.tailHistory = [];
-            pipes.length = 0; enemies.length = 0; coins.length = 0; fireballs.length = 0;
+            pipes.length = 0; enemies.length = 0; coins.length = 0; fireballs.length = 0; particles.length = 0;
             score = 0; runCoins = 0; coinEl.innerText = 0; scoreEl.innerText = 0;
             maxHealth = baseMaxHealth + (playerData.maxHealthLevel * 20); currentHealth = maxHealth;
             frames = 0; gameSpeed = 2.5; gameState = 'play';
@@ -787,8 +846,10 @@
             } else if (gameState === 'over') {
                 dragon.draw();
                 for(let p of pipes) { 
-                    drawBambooSegment(p.x, 0, pipeWidth, p.top);
-                    drawBambooSegment(p.x, canvas.height - 40 - p.bottom, pipeWidth, p.bottom);
+                    if(!p.disabled) {
+                        if(p.topHealth > 0) drawBambooSegment(p.x, 0, pipeWidth, p.top, p.topHealth);
+                        if(p.bottomHealth > 0) drawBambooSegment(p.x, canvas.height - 40 - p.bottom, pipeWidth, p.bottom, p.bottomHealth);
+                    }
                 }
             }
             animationId = requestAnimationFrame(loop);
