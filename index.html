@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dragon Spirit: Stable Edition</title>
+    <title>Dragon Spirit: Safe Ground Edition</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
@@ -751,7 +751,13 @@
             update: function() {
                 this.velocity += gravity * speedMultiplier;
                 this.y += this.velocity;
-                if (this.y + this.radius >= canvas.height - 40) { this.y = canvas.height - 40 - this.radius; takeDamage(1000); }
+                
+                // SAFE GROUND LOGIC
+                if (this.y + this.radius >= canvas.height - 40) {
+                    this.y = canvas.height - 40 - this.radius;
+                    this.velocity = 0; // Stop downward
+                }
+                
                 if (this.y - this.radius <= 0) { this.y = this.radius; this.velocity = 0; }
             },
             flap: function() { this.velocity = this.jump; },
@@ -785,14 +791,15 @@
                     createExplosion(dragon.x + 25, dragon.y, themeColors.bambooLight); 
                     if(hitObject) hitObject.disabled = true; 
                     dragon.velocity = -3; invulnerable = 60; 
-                } else { 
-                    createExplosion(dragon.x, dragon.y, '#fff'); invulnerable = 60; 
-                }
+                } 
+                else { createExplosion(dragon.x, dragon.y, '#fff'); invulnerable = 60; }
                 saveData(); return; 
             }
             currentHealth -= amount;
-            document.getElementById('damageFlash').style.opacity = 0.6;
-            setTimeout(() => document.getElementById('damageFlash').style.opacity = 0, 150);
+            if(document.getElementById('damageFlash')) {
+                document.getElementById('damageFlash').style.opacity = 0.6;
+                setTimeout(() => document.getElementById('damageFlash').style.opacity = 0, 150);
+            }
             if (currentHealth <= 0) { currentHealth = 0; gameOver(); }
         }
 
@@ -875,6 +882,8 @@
                         for (let k = 0; k < pipes.length; k++) {
                             let p = pipes[k];
                             if (p.x > f.x + 50 || p.x + pipeWidth < f.x - 50) continue;
+                            
+                            // Check Top Pipe Weak Point
                             if (!p.disabled && p.topHealth > 0 && f.x > p.x && f.x < p.x + pipeWidth) {
                                 if (f.y < p.top) { 
                                     hit = true;
